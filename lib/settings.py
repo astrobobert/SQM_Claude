@@ -25,5 +25,13 @@ TCP_PORT      = 10001   # Standard Unihedron SQM port
 TCP_TIMEOUT_S = 10      # Client socket read timeout (rx sessions)
 CX_TIMEOUT_S  = 60      # Socket read timeout during a cx persistent session
 
+# ── HTTP server (browser page + JSON API) ────────────────────────────────────
+HTTP_PORT      = 80     # http://<meter-ip>/  from any phone or laptop on the WiFi
+HTTP_TIMEOUT_S = 3      # Give up on a browser connection that sends nothing
+HOSTNAME       = "sqm"  # DHCP hostname; many routers then resolve http://sqm/
+
+# ── TMP117 temperature sensor ────────────────────────────────────────────────
+TMP117_ADDR = 0x48        # default (ADD0 → GND); range 0x48–0x4B
+
 # ── Status LED ───────────────────────────────────────────────────────────────
 LED_PIN = "LED"           # Pico W2 onboard LED (CYW43 GPIO)

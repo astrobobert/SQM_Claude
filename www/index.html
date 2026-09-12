@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SQM</title>
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --line: #2a313b;
+    --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff; --ok: #3fb950;
+    --warn: #d29922; --bad: #f85149; --big: #ffffff;
+  }
+  body.night {
+    --bg: #000; --panel: #140000; --line: #3a0000;
+    --text: #ff5a5a; --muted: #a03030; --accent: #ff7070; --ok: #ff7070;
+    --warn: #ff9a3c; --bad: #ff2020; --big: #ff6a6a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; background: var(--bg); color: var(--text);
+         font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
+  header h1 { font-size: 18px; margin: 0 auto 0 0; letter-spacing: .04em; }
+  header .host { color: var(--muted); font-size: 13px; }
+  .status { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
+  .dot.ok { background: var(--ok); } .dot.busy { background: var(--warn); } .dot.bad { background: var(--bad); }
+  main { display: grid; gap: 16px; grid-template-columns: 1fr; max-width: 1000px; margin: 0 auto; }
+  @media (min-width: 760px) { main { grid-template-columns: 3fr 2fr; } .wide { grid-column: 1 / -1; } }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  section h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 0 0 12px; }
+  .readout { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+  .mpsas { font-size: 64px; font-weight: 600; line-height: 1; color: var(--big); font-variant-numeric: tabular-nums; }
+  .mpsas small { font-size: 16px; color: var(--muted); font-weight: 400; margin-left: 6px; }
+  .bortle { font-size: 20px; padding: 4px 12px; border: 1px solid var(--line); border-radius: 999px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-top: 16px; }
+  .stat { border-top: 1px solid var(--line); padding-top: 6px; }
+  .stat .k { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+  .stat .v { font-size: 18px; font-variant-numeric: tabular-nums; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
+  button, select, input { font: inherit; color: var(--text); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 6px; padding: 9px 14px; }
+  button { cursor: pointer; } button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 600; }
+  button:disabled { opacity: .5; cursor: default; }
+  input[type=number] { width: 110px; font-variant-numeric: tabular-nums; }
+  label { color: var(--muted); }
+  .hint { color: var(--muted); font-size: 12px; margin-top: 10px; }
+  .offset { font-size: 32px; font-variant-numeric: tabular-nums; }
+  .raw { font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: var(--muted);
+         margin-top: 12px; word-break: break-all; }
+  .err { color: var(--bad); margin-top: 10px; min-height: 1.4em; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 13px; }
+  th, td { text-align: right; padding: 5px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; }
+  .tablewrap { max-height: 320px; overflow: auto; margin-top: 8px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>SQM</h1>
+  <span class="host" id="host"></span>
+  <div class="status"><span class="dot" id="dot"></span><span id="statusText">idle</span></div>
+  <button id="nightBtn" title="Red night-vision palette">Night</button>
+</header>
+
+<main>
+  <section>
+    <h2>Sky brightness</h2>
+    <div class="readout">
+      <div class="mpsas"><span id="mpsas">--.--</span><small>mag/arcsec²</small></div>
+      <div class="bortle">Bortle <span id="bortle">–</span></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="k">Lux</div><div class="v" id="lux">–</div></div>
+      <div class="stat"><div class="k">Temp</div><div class="v" id="temp">–</div></div>
+      <div class="stat"><div class="k">Chan0</div><div class="v" id="chan0">–</div></div>
+      <div class="stat"><div class="k">Chan1 (IR)</div><div class="v" id="chan1">–</div></div>
+      <div class="stat"><div class="k">Last read</div><div class="v" id="when">–</div></div>
+    </div>
+    <div class="row">
+      <button class="primary" id="readBtn">Take reading</button>
+      <label for="auto">Auto</label>
+      <select id="auto">
+        <option value="0">off</option>
+        <option value="5">every 5 s</option>
+        <option value="10">every 10 s</option>
+        <option value="30">every 30 s</option>
+        <option value="60">every 60 s</option>
+      </select>
+    </div>
+    <div class="raw" id="rawRx">–</div>
+    <div class="err" id="errRx"></div>
+  </section>
+
+  <section>
+    <h2>Calibration</h2>
+    <div>Current offset <span class="offset" id="offset">–</span></div>
+    <div class="row">
+      <label for="newOffset">New offset</label>
+      <input type="number" id="newOffset" step="0.01" placeholder="12.60">
+      <button id="offsetSetBtn">Set</button>
+    </div>
+    <div class="row">
+      <label for="ref">Reference meter reads</label>
+      <input type="number" id="ref" step="0.01" placeholder="21.30">
+      <button id="suggestBtn" title="new = current offset + (reference minus this meter's last MPSAS)">Suggest</button>
+    </div>
+    <div class="hint">Set writes CALIBRATION_OFFSET to the meter's flash immediately.
+      MPSAS = -2.5 · log10(lux) + offset, so raising the offset by 0.3 raises every reading by 0.3.</div>
+    <div class="raw" id="rawCx">–</div>
+    <div class="err" id="errCx"></div>
+  </section>
+
+  <section class="wide">
+    <h2>Log</h2>
+    <div class="row" style="margin-top:0">
+      <button id="csvBtn">Save CSV</button>
+      <button id="clearBtn">Clear</button>
+      <span class="hint" style="margin:0" id="logCount">0 readings</span>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Time</th><th>MPSAS</th><th>Bortle</th><th>Lux</th><th>Temp °C</th><th>Chan0</th><th>Chan1</th></tr></thead>
+        <tbody id="log"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const log = [];
+  let timer = null, busy = false, lastMpsas = null;
+  $('host').textContent = location.host;
+
+  try {
+    const s = JSON.parse(localStorage.getItem('sqm') || '{}');
+    if (s.auto) $('auto').value = s.auto;
+    if (s.night) document.body.classList.add('night');
+  } catch (e) {}
+  function remember() {
+    try {
+      localStorage.setItem('sqm', JSON.stringify({
+        auto: $('auto').value, night: document.body.classList.contains('night'),
+      }));
+    } catch (e) {}
+  }
+
+  function setStatus(cls, text) { $('dot').className = 'dot ' + cls; $('statusText').textContent = text; }
+
+  async function call(path, opts) {
+    if (busy) throw new Error('another request is still in progress');
+    busy = true;
+    setStatus('busy', 'reading…');
+    document.querySelectorAll('button').forEach(b => { if (b.id !== 'nightBtn') b.disabled = true; });
+    try {
+      const r = await fetch(path, opts);
+      const j = await r.json();
+      if (!r.ok || j.error) throw new Error(j.error || `HTTP ${r.status}`);
+      setStatus('ok', 'ok');
+      return j;
+    } catch (e) {
+      setStatus('bad', 'error');
+      throw e;
+    } finally {
+      busy = false;
+      document.querySelectorAll('button').forEach(b => b.disabled = false);
+    }
+  }
+
+  const fmt = (v, d) => (v === null || v === undefined) ? '–' : Number(v).toFixed(d);
+  const fmtLux = v => (v === null || v === undefined) ? '–' : (v < 0.01 ? Number(v).toExponential(3) : fmt(v, 4));
+  const now = () => new Date().toISOString().slice(0, 19);
+  const hhmmss = iso => iso.slice(11, 19);
+
+  function showOffset(v) {
+    $('offset').textContent = fmt(v, 2);
+    if (!$('newOffset').value) $('newOffset').value = fmt(v, 2);
+  }
+
+  function showReading(rd, when) {
+    lastMpsas = rd.mpsas;
+    $('mpsas').textContent  = rd.mpsas === null ? '----' : fmt(rd.mpsas, 2);
+    $('bortle').textContent = rd.bortle ?? '–';
+    $('lux').textContent    = fmtLux(rd.lux);
+    $('temp').textContent   = fmt(rd.temp, 1) + ' °C';
+    $('chan0').textContent  = rd.chan0.toLocaleString();
+    $('chan1').textContent  = rd.chan1.toLocaleString();
+    $('when').textContent   = hhmmss(when);
+    $('rawRx').textContent  = rd.line;
+    showOffset(rd.offset);
+  }
+
+  function addLog(rd, when) {
+    const row = { time: when, mpsas: rd.mpsas, bortle: rd.bortle, lux: rd.lux, temp: rd.temp,
+                  chan0: rd.chan0, chan1: rd.chan1 };
+    log.push(row);
+    if (log.length > 1000) log.shift();
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${hhmmss(row.time)}</td><td>${fmt(row.mpsas, 2)}</td><td>${row.bortle ?? '–'}</td>` +
+      `<td>${fmtLux(row.lux)}</td><td>${fmt(row.temp, 1)}</td><td>${row.chan0}</td><td>${row.chan1}</td>`;
+    const body = $('log');
+    body.insertBefore(tr, body.firstChild);
+    while (body.children.length > 1000) body.removeChild(body.lastChild);
+    $('logCount').textContent = `${log.length} reading${log.length === 1 ? '' : 's'}`;
+  }
+
+  async function takeReading() {
+    $('errRx').textContent = '';
+    try {
+      const j = await call('/api/rx');
+      const when = now();
+      showReading(j, when);
+      addLog(j, when);
+    } catch (e) { $('errRx').textContent = e.message; }
+  }
+
+  async function readOffset() {
+    try { showOffset((await call('/api/offset')).offset); }
+    catch (e) { $('errCx').textContent = e.message; }
+  }
+
+  async function setOffset() {
+    $('errCx').textContent = '';
+    const value = parseFloat($('newOffset').value);
+    if (!Number.isFinite(value)) { $('errCx').textContent = 'enter a numeric offset first'; return; }
+    if (!confirm(`Write CALIBRATION_OFFSET = ${value.toFixed(2)} to the meter?`)) return;
+    try {
+      const j = await call('/api/offset', { method: 'POST',
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value }) });
+      $('offset').textContent = fmt(j.offset, 2);
+      $('rawCx').textContent = `offset ${fmt(j.offset, 2)} saved to /lib/settings.py`;
+    } catch (e) { $('errCx').textContent = e.message; }
+  }
+
+  function suggest() {
+    const ref = parseFloat($('ref').value);
+    const cur = parseFloat($('offset').textContent);
+    if (!Number.isFinite(ref)) { $('errCx').textContent = 'enter the reference meter value'; return; }
+    if (!Number.isFinite(cur) || lastMpsas === null) { $('errCx').textContent = 'take a reading first'; return; }
+    $('newOffset').value = (cur + (ref - lastMpsas)).toFixed(2);
+    $('errCx').textContent = '';
+  }
+
+  function setAuto() {
+    remember();
+    clearInterval(timer); timer = null;
+    const s = parseInt($('auto').value, 10);
+    if (s > 0) { timer = setInterval(() => { if (!busy) takeReading(); }, s * 1000); takeReading(); }
+  }
+
+  function saveCsv() {
+    if (!log.length) return;
+    const head = 'time,mpsas,bortle,lux,temp_c,chan0,chan1';
+    const rows = log.map(r => [r.time, r.mpsas ?? '', r.bortle ?? '', r.lux ?? '', r.temp, r.chan0, r.chan1].join(','));
+    const blob = new Blob([head + '\n' + rows.join('\n') + '\n'], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `sqm-log-${now().replace(/[:T]/g, '-')}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  $('readBtn').onclick      = takeReading;
+  $('offsetSetBtn').onclick = setOffset;
+  $('suggestBtn').onclick   = suggest;
+  $('auto').onchange        = setAuto;
+  $('csvBtn').onclick       = saveCsv;
+  $('clearBtn').onclick     = () => { log.length = 0; $('log').innerHTML = ''; $('logCount').textContent = '0 readings'; };
+  $('nightBtn').onclick     = () => { document.body.classList.toggle('night'); remember(); };
+
+  if (parseInt($('auto').value, 10) > 0) setAuto(); else readOffset();
+})();
+</script>
+</body>
+</html>
