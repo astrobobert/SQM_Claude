@@ -41,8 +41,14 @@ the Pico:
 | SCL | TSL2591 `SCL` | Same bus, GP17 at the Pico |
 | ADD0 | GND | Selects address `0x48` (`TMP117_ADDR` in `lib/settings.py`) |
 
+All sensor connections are soldered directly to the breakout pads — no JST-XH or
+other plug-in connectors. Slide a piece of heat-shrink over each joint before
+soldering and shrink it down afterwards so bare wire cannot touch a neighbouring
+pad when the lid is closed. Connectors were dropped because they add height in
+the sensor bay and can work loose with temperature cycling outdoors.
+
 Leave the TSL2591 `INT` pad and the TMP117 `ALERT` pad unconnected — the firmware
-polls both sensors. Keep the jumper wires short: the TSL2591 breakout already has
+polls both sensors. Keep the wires short: the TSL2591 breakout already has
 I²C pull-ups, and the TMP117 breakout adds its own, which is fine at 400 kHz over
 a few centimetres. If your TMP117 breakout has an address jumper instead of a bare
 ADD0 pin, set it for `0x48` or change `TMP117_ADDR` to match (`0x48`–`0x4B`).
@@ -68,7 +74,8 @@ The model is designed for **2 mm screw inserts**.
 
 **Assembly notes:**
 - Seat the Pico in the pan with the USB connector facing the cut-out, then route the
-  four I²C wires (3V3, GND, GP16, GP17) up to the lid.
+  four I²C wires (3V3, GND, GP16, GP17) up to the lid. Solder them to the Pico pads
+  and cover each joint with heat-shrink; there are no connectors in the build.
 - Mount the TSL2591 in the lid directly under the aperture, sensor facing up.
 - Mount the TMP117 offset beside the TSL2591 and wire it to the TSL2591 header pads
   as described under [Hardware](#hardware) — nothing from the TMP117 runs back to the Pico.
