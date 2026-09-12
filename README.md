@@ -26,32 +26,39 @@ Protocol reference: [Unihedron SQM-LE product page and user manual](https://unih
 | Sensor VIN | Pico 3V3(OUT) — pin 36 |
 | Sensor GND | Pico GND — pin 33 |
 
-### TMP117 wiring — piggy-backed on the TSL2591
+### TMP117 wiring — pinned to the TSL2591
 
-Only the TSL2591 is wired back to the Pico. The TMP117 breakout is mounted offset
-beside the TSL2591 (out from under the aperture) and takes its power and I²C from
-the TSL2591 breakout's header pads, so the two boards share one four-wire run to
-the Pico:
+The two sensor breakouts are soldered together into one unit with header pins, and
+only that unit is wired back to the Pico. The TMP117 header is soldered **offset**
+by one or more positions so that its GND, SCL and SDA pins land on the matching
+TSL2591 pads; the pins then bridge the two boards directly with no wires between
+them.
 
-| TMP117 pin | Connect to | Notes |
-|------------|------------|-------|
-| V+ / VCC | TSL2591 `VIN` | 3V3 from the Pico, passed through |
-| GND | TSL2591 `GND` | |
-| SDA | TSL2591 `SDA` | Same bus, GP16 at the Pico |
-| SCL | TSL2591 `SCL` | Same bus, GP17 at the Pico |
+| TMP117 pin | Lands on TSL2591 | Notes |
+|------------|------------------|-------|
+| GND | `GND` | |
+| SCL | `SCL` | Same bus, GP17 at the Pico |
+| SDA | `SDA` | Same bus, GP16 at the Pico |
+| V+ / VCC | `VIN` | 3V3 from the Pico, passed through |
 | ADD0 | GND | Selects address `0x48` (`TMP117_ADDR` in `lib/settings.py`) |
 
-All sensor connections are soldered directly to the breakout pads — no JST-XH or
-other plug-in connectors. Slide a piece of heat-shrink over each joint before
-soldering and shrink it down afterwards so bare wire cannot touch a neighbouring
-pad when the lid is closed. Connectors were dropped because they add height in
-the sensor bay and can work loose with temperature cycling outdoors.
+**Cut the power-LED trace on both boards** before assembly. The TSL2591 and TMP117
+breakouts each carry a green power LED that sits a few millimetres from the light
+sensor and would otherwise add a constant glow inside the sensor bay. Each board has
+a small jumper trace next to the LED for exactly this purpose; sever it with a
+hobby knife and confirm the LED stays dark on power-up.
+
+Four pigtail wires (3V3, GND, SDA, SCL) are soldered to the header pins and run to
+the Pico. Everything is soldered directly — no JST-XH or other plug-in connectors —
+with heat-shrink over each joint so bare wire cannot touch a neighbouring pad when
+the lid is closed. Connectors were dropped because they add height in the sensor
+bay and can work loose with temperature cycling outdoors.
 
 Leave the TSL2591 `INT` pad and the TMP117 `ALERT` pad unconnected — the firmware
-polls both sensors. Keep the wires short: the TSL2591 breakout already has
-I²C pull-ups, and the TMP117 breakout adds its own, which is fine at 400 kHz over
-a few centimetres. If your TMP117 breakout has an address jumper instead of a bare
-ADD0 pin, set it for `0x48` or change `TMP117_ADDR` to match (`0x48`–`0x4B`).
+polls both sensors. The TSL2591 breakout already has I²C pull-ups, and the TMP117
+breakout adds its own, which is fine at 400 kHz over a few centimetres. If your
+TMP117 breakout has an address jumper instead of a bare ADD0 pin, set it for `0x48`
+or change `TMP117_ADDR` to match (`0x48`–`0x4B`).
 
 Mounting the TMP117 offset from the light sensor keeps it clear of the optical path
 while still reading the temperature inside the sensor bay, which is what the
@@ -67,20 +74,26 @@ lettered in stacking order from the top down; the footprint is about 87 × 54 mm
 | File | Part | Size (mm) | Holds |
 |------|------|-----------|-------|
 | `A_Hood.stl` | Hood | 48 × 48 × 9 | Sits over the aperture on the lid and shields the TSL2591 from stray side light |
-| `B_Lid.stl` | Lid | 87 × 54 × 18 | Sensor bay: TSL2591 under the aperture, TMP117 offset beside it |
-| `C_Pan.stl` | Pan | 87 × 54 × 10 | Base tray for the Pico W / W2 |
+| `B_Lid.stl` | Lid | 87 × 54 × 18 | Carries everything: the TSL2591 + TMP117 sensor unit under the aperture and the Pico W / W2 underneath |
+| `C_Pan.stl` | Pan | 87 × 54 × 10 | Bottom cover; screws to the lid and sticks to the power bank |
 
 The model is designed for **2 mm screw inserts**.
 
-**Assembly notes:**
-- Seat the Pico in the pan with the USB connector facing the cut-out, then route the
-  four I²C wires (3V3, GND, GP16, GP17) up to the lid. Solder them to the Pico pads
-  and cover each joint with heat-shrink; there are no connectors in the build.
-- Mount the TSL2591 in the lid directly under the aperture, sensor facing up.
-- Mount the TMP117 offset beside the TSL2591 and wire it to the TSL2591 header pads
-  as described under [Hardware](#hardware) — nothing from the TMP117 runs back to the Pico.
-- Fit the hood over the aperture last. It is a separate part so it can be reprinted
-  taller or with a different opening without reprinting the lid.
+**Assembly sequence:**
+
+1. Cut the power-LED trace on the TSL2591 and on the TMP117 (see [Hardware](#hardware)).
+2. Solder the two boards together with header pins, offsetting the TMP117 header so
+   its GND, SCL and SDA pins land on the matching TSL2591 pads.
+3. Solder four pigtails (3V3, GND, SDA, SCL) to the header pins and heat-shrink the joints.
+4. Fit the sensor unit into the lid with the TSL2591 directly under the aperture, sensor
+   facing up, passing the pigtails through the access hole.
+5. Solder the pigtails to the Pico (3V3 OUT, GND, GP16, GP17), heat-shrink them, and
+   mount the Pico to the underside of the lid.
+6. Screw the lid to the pan, then screw the hood to the lid over the aperture.
+7. Stick the finished unit to a USB power bank with double-sided tape.
+
+The hood is a separate part so it can be reprinted taller or with a different
+opening without reprinting the lid.
 
 ---
 
@@ -101,8 +114,8 @@ SQM_Claude/
 │   └── secrets.example.py  credential template
 ├── chassis/
 │   ├── A_Hood.stl       stray-light hood over the aperture
-│   ├── B_Lid.stl        lid with TSL2591 + TMP117 sensor bay
-│   └── C_Pan.stl        base tray for the Pico
+│   ├── B_Lid.stl        lid carrying the sensor unit and the Pico
+│   └── C_Pan.stl        bottom cover
 ├── tools/
 │   └── sqm_console.py   desktop web console for rx / cx (stdlib only)
 ├── requirements.txt
