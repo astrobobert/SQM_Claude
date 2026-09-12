@@ -28,11 +28,13 @@ Protocol reference: [Unihedron SQM-LE product page and user manual](https://unih
 
 ### TMP117 wiring — pinned to the TSL2591
 
-The two sensor breakouts are soldered together into one unit with header pins, and
-only that unit is wired back to the Pico. The TMP117 header is soldered **offset**
-by one or more positions so that its GND, SCL and SDA pins land on the matching
-TSL2591 pads; the pins then bridge the two boards directly with no wires between
-them.
+The two sensor breakouts are stacked and soldered together into one unit with header
+pins, and only that unit is wired back to the Pico. The TMP117 sits **directly under
+the TSL2591** with the mounting holes of the two boards aligned and the TMP117's
+connector touching the underside of the TSL2591 PCB. The TMP117 header is soldered
+**offset** by one or more positions so that its GND, SCL and SDA pins land on the
+matching TSL2591 pads; the pins then bridge the two boards directly with no wires
+between them.
 
 | TMP117 pin | Lands on TSL2591 | Notes |
 |------------|------------------|-------|
@@ -60,9 +62,10 @@ breakout adds its own, which is fine at 400 kHz over a few centimetres. If your
 TMP117 breakout has an address jumper instead of a bare ADD0 pin, set it for `0x48`
 or change `TMP117_ADDR` to match (`0x48`–`0x4B`).
 
-Mounting the TMP117 offset from the light sensor keeps it clear of the optical path
-while still reading the temperature inside the sensor bay, which is what the
-`C` field in the SQM-LE response reports.
+The stacked mounting matters: with the TMP117 pressed against the underside of the
+TSL2591 board it tracks the light sensor's own temperature rather than the air in
+the enclosure, which is what the `C` field in the SQM-LE response is meant to
+report. Do not mount it beside the TSL2591 or elsewhere in the bay.
 
 ---
 
@@ -74,7 +77,7 @@ lettered in stacking order from the top down; the footprint is about 87 × 54 mm
 | File | Part | Size (mm) | Holds |
 |------|------|-----------|-------|
 | `A_Hood.stl` | Hood | 48 × 48 × 9 | Sits over the aperture on the lid and shields the TSL2591 from stray side light |
-| `B_Lid.stl` | Lid | 87 × 54 × 18 | Carries everything: the TSL2591 + TMP117 sensor unit under the aperture and the Pico W / W2 underneath |
+| `B_Lid.stl` | Lid | 87 × 54 × 18 | Carries everything: the stacked TSL2591 / TMP117 sensor unit under the aperture and the Pico W / W2 underneath |
 | `C_Pan.stl` | Pan | 87 × 54 × 10 | Bottom cover; screws to the lid and sticks to the power bank |
 
 The model is designed for **2 mm screw inserts**.
@@ -82,12 +85,14 @@ The model is designed for **2 mm screw inserts**.
 **Assembly sequence:**
 
 1. Cut the power-LED trace on the TSL2591 and on the TMP117 (see [Hardware](#hardware)).
-2. Solder the two boards together with header pins, offsetting the TMP117 header so
-   its GND, SCL and SDA pins land on the matching TSL2591 pads.
+2. Stack the TMP117 directly under the TSL2591 with the mounting holes aligned and
+   the TMP117 connector touching the underside of the TSL2591 PCB. Solder the boards
+   together with header pins, offsetting the TMP117 header so its GND, SCL and SDA
+   pins land on the matching TSL2591 pads.
 3. Solder four pigtails (3V3, GND, SDA, SCL) to the header pins and heat-shrink the joints.
 4. Fit the sensor unit into the lid with the TSL2591 directly under the aperture, sensor
    facing up, passing the pigtails through the access hole.
-5. Solder the pigtails to the Pico (3V3 OUT, GND, GP16, GP17), heat-shrink them, and
+5. Solder the pigtails to the Pico (3V3 OUT, GND, GP16, GP17), and
    mount the Pico to the underside of the lid.
 6. Screw the lid to the pan, then screw the hood to the lid over the aperture.
 7. Stick the finished unit to a USB power bank with double-sided tape.
