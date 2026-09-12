@@ -26,29 +26,54 @@ Protocol reference: [Unihedron SQM-LE product page and user manual](https://unih
 | Sensor VIN | Pico 3V3(OUT) — pin 36 |
 | Sensor GND | Pico GND — pin 33 |
 
-**TMP117 Configuration:**
-- Address pin (ADD0) pulled to GND for address `0x48`
-- Connected to the same I²C bus as TSL2591 (SDA=GP16, SCL=GP17)
-- Provides temperature readings (°C) appended to SQM response packets
-- Breakout board mounted separately from main enclosure
+### TMP117 wiring — piggy-backed on the TSL2591
+
+Only the TSL2591 is wired back to the Pico. The TMP117 breakout is mounted offset
+beside the TSL2591 (out from under the aperture) and takes its power and I²C from
+the TSL2591 breakout's header pads, so the two boards share one four-wire run to
+the Pico:
+
+| TMP117 pin | Connect to | Notes |
+|------------|------------|-------|
+| V+ / VCC | TSL2591 `VIN` | 3V3 from the Pico, passed through |
+| GND | TSL2591 `GND` | |
+| SDA | TSL2591 `SDA` | Same bus, GP16 at the Pico |
+| SCL | TSL2591 `SCL` | Same bus, GP17 at the Pico |
+| ADD0 | GND | Selects address `0x48` (`TMP117_ADDR` in `lib/settings.py`) |
+
+Leave the TSL2591 `INT` pad and the TMP117 `ALERT` pad unconnected — the firmware
+polls both sensors. Keep the jumper wires short: the TSL2591 breakout already has
+I²C pull-ups, and the TMP117 breakout adds its own, which is fine at 400 kHz over
+a few centimetres. If your TMP117 breakout has an address jumper instead of a bare
+ADD0 pin, set it for `0x48` or change `TMP117_ADDR` to match (`0x48`–`0x4B`).
+
+Mounting the TMP117 offset from the light sensor keeps it clear of the optical path
+while still reading the temperature inside the sensor bay, which is what the
+`C` field in the SQM-LE response reports.
 
 ---
 
 ## Chassis
 
-The `chassis/` folder contains 3D-printable STL files for an enclosure that houses the Pico and TSL2591:
+The `chassis/` folder contains a three-part 3D-printable enclosure. The parts are
+lettered in stacking order from the top down; the footprint is about 87 × 54 mm.
 
-| File | Part |
-|------|------|
-| `SQM Chassis Top.stl` | Top half of enclosure |
-| `SQM Chassis Bottom.stl` | Bottom half of enclosure |
+| File | Part | Size (mm) | Holds |
+|------|------|-----------|-------|
+| `A_Hood.stl` | Hood | 48 × 48 × 9 | Sits over the aperture on the lid and shields the TSL2591 from stray side light |
+| `B_Lid.stl` | Lid | 87 × 54 × 18 | Sensor bay: TSL2591 under the aperture, TMP117 offset beside it |
+| `C_Pan.stl` | Pan | 87 × 54 × 10 | Base tray for the Pico W / W2 |
 
 The model is designed for **2 mm screw inserts**.
 
 **Assembly notes:**
-- TSL2591 is mounted inside the main enclosure directly under the aperture
-- TMP117 breakout board is mounted separately (typically on the exterior or in a secondary enclosure) to measure ambient temperature
-- Both sensors share the I²C bus back to the Pico
+- Seat the Pico in the pan with the USB connector facing the cut-out, then route the
+  four I²C wires (3V3, GND, GP16, GP17) up to the lid.
+- Mount the TSL2591 in the lid directly under the aperture, sensor facing up.
+- Mount the TMP117 offset beside the TSL2591 and wire it to the TSL2591 header pads
+  as described under [Hardware](#hardware) — nothing from the TMP117 runs back to the Pico.
+- Fit the hood over the aperture last. It is a separate part so it can be reprinted
+  taller or with a different opening without reprinting the lid.
 
 ---
 
@@ -68,8 +93,9 @@ SQM_Claude/
 │   ├── secrets.py           WiFi credentials (not committed)
 │   └── secrets.example.py  credential template
 ├── chassis/
-│   ├── SQM Chassis Top.stl
-│   └── SQM Chassis Bottom.stl
+│   ├── A_Hood.stl       stray-light hood over the aperture
+│   ├── B_Lid.stl        lid with TSL2591 + TMP117 sensor bay
+│   └── C_Pan.stl        base tray for the Pico
 ├── tools/
 │   └── sqm_console.py   desktop web console for rx / cx (stdlib only)
 ├── requirements.txt
